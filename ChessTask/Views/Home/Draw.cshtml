@@ -1,19 +1,11 @@
-﻿@model ChessTask.Views.Home.DrawModel
+﻿@model List<List<int>>
 
 <!DOCTYPE html>
-<html lang="EN">
+<html>
 <head>
-    <title>Chess Board</title>
-    <meta charset="UTF-8">
+    <meta charset="utf-8" />
+    <title>Start Page</title>
     <style>
-        .button {
-            /*background-color: #ff9494;*/
-           /* border: 0.7px solid;*/
-            width: 10em;
-            height: 5em;
-            text-align: center;
-            vertical-align: middle;
-        }
         .box {
             text-align: center;
             background-color: #FFE4E1;
@@ -48,67 +40,140 @@
             .chess-board .black {
                 background: #808080;
             }
+
             .chess-board .red {
                 background: #B22222;
+            }
+
+            .chess-board .sht {
+                background: #2E8B57;
             }
     </style>
 </head>
 <body>
-   
 
     <div class="box">
-        <div@* class="button"*@>
-            <form method="post">
-            
-               @* <a href="~/Home/Start">"Start/Restart"</a>*@
-                <input type="submit" value="Start/Restart" />
-
-           </form>
-        </div>
         <div class="centered">
-
-            <table class="chess-board">
-                <tbody>
-                    <tr>
-                        <th></th>
-                        <th>a</th>
-                        <th>b</th>
-                        <th>c</th>
-                        <th>d</th>
-                        <th>e</th>
-                        <th>f</th>
-                        <th>g</th>
-                        <th>h</th>
-                    </tr>
-                    @for (int i = 8; i> 0; i--)
-                    {
-                        <tr>
-                            <th>@i</th>
-                            @for (int j=1; j<= 8; j++)
-                            {
-                                @if(ViewBag.coord_x == 8-i && ViewBag.coord_y == j-1)
-                                {
-                                    @*<img src="~chess_horse.png" alt="Sample Photo" width="5em" height="5em" />*@
-                                    <td class="red"></td>
-                                }
-                                else if(((i + j) / 2) *2 == i + j)
-                                {
-                                    <td class="black"></td>
-                                }
-                                else
-                                {
-                                    <td class="white"></td>
-                                }
-                                
-                            }
-                        </tr>
-                    }
-
-                </tbody>
-            </table>
-
+            <input type="button" id="buttonStart" value="Начать игру">
+            <input type="button" id="buttonPause" value="Пауза/Продолжить">
+            <table class="chess-board" id="elem"></table>
+            <p id="p"></p>
         </div>
     </div>
+
+    <script>
+
+        let elem = document.querySelector('#elem');        
+        let counter = 0;
+
+        const myArray = [];
+        @foreach (var d in Model)
+        {
+            @:myArray.push([@(d[0]), @(d[1])]);
+        }
+
+        createTable(elem, @ViewBag.coord_x, @ViewBag.coord_y);
+
+        function createTable(parent, x, y) {
+
+            let tbd = document.createElement('tbody');
+
+            let p = document.querySelector('#p');
+
+            let tr = document.createElement('tr'); //рисуем первую строку
+            let lts = ["", "A", "B", "C", "D", "E", "F", "G", "H"];
+            for (let i = 0; i < 9; i++) {
+                let th = document.createElement('th');
+                th.textContent = lts[i];
+                tr.appendChild(th);
+            } //конец первой строки
+            tbd.appendChild(tr);
+
+            for (let i = 8; i > 0; i--) {
+
+                let tr = document.createElement('tr');
+                let th_vert = document.createElement('th');
+                th_vert.textContent = i;
+                tr.appendChild(th_vert);
+
+                for (let j = 1; j < 9; j++) {
+                    let td = document.createElement('td');
+                    if (x == 8 - i && y == j - 1) {
+                        td.setAttribute('class', 'red');
+                    }
+                    else if (wentPoint(counter, 8 - i, j - 1)) {
+                        td.setAttribute('class', 'sht');
+                    }
+                    else if ((i + j) % 2 == 0) {
+                        td.setAttribute('class', 'black');
+                    }
+                    else {
+                        td.setAttribute('class', 'white');
+                    }
+                    tr.appendChild(td);
+                }
+                tbd.appendChild(tr);
+            }
+            parent.appendChild(tbd);
+
+            p.innerHTML = `${counter+1}. { ${8-x} ${lts[y + 1]} }`;
+
+        }
+
+        function wentPoint(len, x, y){
+            for (let i=0; i<len; i++){
+                if (myArray[i][0] == x && myArray[i][1] == y){
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        buttonStart.onclick = Execute;
+        buttonPause.onclick = Pause;
+
+        let timerId;
+        let interval = @ViewBag.t;
+        let l = myArray.length;
+        let flag = 0;
+
+        function Execute(){
+
+            clearTimeout(timerId);
+            counter = 0;
+            flag = 0;
+
+            timerId = Timer();
+        }
+
+        function Pause(){
+            if (flag == 0){
+                clearTimeout(timerId);
+                flag = 1;
+            }
+            else {
+                timerId = Timer();
+                flag = 0;
+            }
+        }
+
+        function Timer() {
+            timerId = setTimeout(function tick(cnt) {
+                if (counter < l) {
+
+                    elem.innerHTML = '';
+                    createTable(elem, myArray[counter][0], myArray[counter][1]);
+                    counter++;
+
+                    timerId = setTimeout(tick, interval * 1000, counter);
+                }
+                else {
+                    clearTimeout(timerId);
+                }
+            }, interval * 1000, counter);
+            return timerId;
+        }
+    </script>
 
 </body>
 </html>
